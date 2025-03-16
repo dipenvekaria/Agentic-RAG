@@ -14,6 +14,7 @@ from qdrant_storage import QdrantStorage
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Filter, FieldCondition, MatchAny
 from dotenv import load_dotenv
+import gradio as gr
 
 load_dotenv()
 
@@ -173,7 +174,7 @@ def query_node(state: GraphState) -> GraphState:
         return state
     system_prompt = PromptTemplate(
         input_variables=["input", "agent_scratchpad"],
-        template="""You are an intelligent assistant designed to answer questions based on a vector database of document embeddings. Use the 'query_vector_db' tool exactly once to retrieve relevant context (summaries of chunks) from the Qdrant vector database. The tool combines vector similarity with keyword filtering on summaries for precision. Provide a concise, accurate answer based on that context. Do not invoke additional tools or repeat the process. If the context is insufficient, say so and suggest refining the question.
+        template="""You are an intelligent assistant designed to answer questions based solely on a vector database of document embeddings. Use the 'query_vector_db' tool exactly once to retrieve relevant context (summaries of chunks) from the Qdrant vector database. Provide a concise, accurate answer based only on that context, without adding external knowledge or assumptions. If the context does not explicitly relate to the query subject, return the tool's output as-is (e.g., 'No relevant information found...'). Do not invoke additional tools or repeat the process.
 
 Question: {input}
 Agent Scratchpad: {agent_scratchpad}"""
@@ -181,7 +182,7 @@ Agent Scratchpad: {agent_scratchpad}"""
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
     tools = [query_vector_db]
     agent = create_openai_tools_agent(llm, tools, system_prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=2)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
     response = agent_executor.invoke({"input": state["question"], "agent_scratchpad": ""})
     state["answer"] = response["output"]
     state["messages"].append(HumanMessage(content=state["question"]))
@@ -189,7 +190,7 @@ Agent Scratchpad: {agent_scratchpad}"""
     return state
 
 
-# Indexing Workflow (runs only when needed)
+# Indexing Workflow
 indexing_workflow = StateGraph(GraphState)
 indexing_workflow.add_node("extract", extract_node)
 indexing_workflow.add_node("chunk", chunk_node)
@@ -202,7 +203,7 @@ indexing_workflow.set_entry_point("extract")
 indexing_workflow.set_finish_point("store")
 indexing_app = indexing_workflow.compile()
 
-# Query Workflow (runs for each question)
+# Query Workflow
 query_workflow = StateGraph(GraphState)
 query_workflow.add_node("query", query_node)
 query_workflow.set_entry_point("query")
@@ -211,20 +212,15 @@ query_app = query_workflow.compile()
 
 
 def needs_indexing(pdf_dir, processed_files, chunk_config):
-    # Check for new files
     files_to_process = [f for f in os.listdir(pdf_dir) if
                         f.lower().endswith(".pdf") and f not in processed_files["processed"]]
     if files_to_process:
         return True
-
-    # Check for chunk config changes
-    current_chunk_size = 512
-    current_chunk_overlap = 50
+    current_chunk_size = 1000
+    current_chunk_overlap = 200
     if (chunk_config.get("chunk_size") != current_chunk_size or
             chunk_config.get("chunk_overlap") != current_chunk_overlap):
         return True
-
-    # Check if chunks or embeddings need updating (simplified)
     for f in os.listdir("convertedoc"):
         base_name = os.path.splitext(f)[0]
         pdf_name = f"{base_name}.pdf"
@@ -233,52 +229,65 @@ def needs_indexing(pdf_dir, processed_files, chunk_config):
         if (pdf_name in processed_files["processed"] and
                 (not os.path.exists(chunked_file) or not os.path.exists(embedded_file))):
             return True
-
     return False
 
 
-def run_pipeline_and_chat():
-    pdf_dir = "documents"
-    processed_files = load_processed_files(pdf_dir)
-    chunk_config = load_chunk_config(pdf_dir)
+# Initial setup
+pdf_dir = "documents"
+processed_files = load_processed_files(pdf_dir)
+chunk_config = load_chunk_config(pdf_dir)
+initial_state = {
+    "pdf_dir": pdf_dir,
+    "extracted_dir": "convertedoc",
+    "chunked_dir": "chunked_docs",
+    "embedded_dir": "embedded_docs",
+    "collection_name": "document_embeddings",
+    "question": "",
+    "answer": "",
+    "messages": [],
+    "processed_files": processed_files,
+    "chunk_config": chunk_config
+}
 
-    # Initial state for both workflows
-    state = {
-        "pdf_dir": pdf_dir,
-        "extracted_dir": "convertedoc",
-        "chunked_dir": "chunked_docs",
-        "embedded_dir": "embedded_docs",
-        "collection_name": "document_embeddings",
-        "question": "",
-        "answer": "",
-        "messages": [],
-        "processed_files": processed_files,
-        "chunk_config": chunk_config
-    }
+# Run indexing if needed
+if needs_indexing(pdf_dir, processed_files, chunk_config):
+    print("Changes detected. Running indexing pipeline...")
+    initial_state = indexing_app.invoke(initial_state)
+    print("Indexing complete.")
+else:
+    print("No changes detected. Skipping indexing.")
 
-    # Run indexing only if needed
-    if needs_indexing(pdf_dir, processed_files, chunk_config):
-        print("Changes detected. Running indexing pipeline...")
-        state = indexing_app.invoke(state)
-        print("Indexing complete.")
-    else:
-        print("No changes detected. Skipping indexing.")
 
-    print("\nYou can now ask questions about the documents. Type 'quit' to exit.")
-    while True:
-        question = input("\nYour question: ")
-        if question.lower() == "quit":
-            break
-        state["question"] = question
-        state = query_app.invoke(state)
-        print(f"\nAnswer: {state['answer']}")
-        print("\nChat History:")
-        for msg in state["messages"]:
-            if isinstance(msg, HumanMessage):
-                print(f"You: {msg.content}")
-            else:
-                print(f"Bot: {msg.content}")
+# Gradio chat function
+def chat_function(message, history):
+    state = initial_state.copy()
+    state["question"] = message  # message is a string from the Textbox
+    # Convert history to LangChain messages (history is list of dicts: [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}])
+    state["messages"] = []
+    for entry in history:
+        if entry["role"] == "user":
+            state["messages"].append(HumanMessage(content=entry["content"]))
+        elif entry["role"] == "assistant":
+            state["messages"].append(AIMessage(content=entry["content"]))
+    state = query_app.invoke(state)
+    # Append new message and response to history
+    new_history = history + [
+        {"role": "user", "content": message},
+        {"role": "assistant", "content": state["answer"]}
+    ]
+    return new_history
 
+
+# Gradio interface
+with gr.Blocks(title="Agentic RAG Chatbot") as demo:
+    gr.Markdown("# Uber RAG Chatbot")
+    gr.Markdown("Ask questions about Uber based on processed documents. Only data from the vector database is used.")
+    chatbot = gr.Chatbot(label="Chat History", type="messages")
+    msg = gr.Textbox(label="Your Question", placeholder="Type your question here (e.g., 'What did Uber do?')")
+    clear = gr.Button("Clear Chat")
+
+    msg.submit(chat_function, inputs=[msg, chatbot], outputs=[chatbot])
+    clear.click(lambda: [], None, chatbot)
 
 if __name__ == "__main__":
-    run_pipeline_and_chat()
+    demo.launch()

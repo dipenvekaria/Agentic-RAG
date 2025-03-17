@@ -20,7 +20,6 @@ import glob
 
 load_dotenv()
 
-
 class GraphState(TypedDict):
     pdf_dir: str
     extracted_dir: str
@@ -34,7 +33,6 @@ class GraphState(TypedDict):
     chunk_config: dict
     relevant_file: str
 
-
 def load_processed_files(pdf_dir):
     config_path = os.path.join(pdf_dir, "processed_files.json")
     if os.path.exists(config_path):
@@ -42,22 +40,19 @@ def load_processed_files(pdf_dir):
             return json.load(f)
     return {"processed": [], "to_process": []}
 
-
 def load_chunk_config(pdf_dir):
     config_path = os.path.join(pdf_dir, "chunk_config.json")
-    default_config = {"chunk_size": 1000, "chunk_overlap": 200}
+    default_config = {"chunk_size": 512, "chunk_overlap": 50}
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
             return json.load(f)
     return default_config
-
 
 def save_configs(pdf_dir, processed_files, chunk_config):
     with open(os.path.join(pdf_dir, "processed_files.json"), "w") as f:
         json.dump(processed_files, f, indent=4)
     with open(os.path.join(pdf_dir, "chunk_config.json"), "w") as f:
         json.dump(chunk_config, f, indent=4)
-
 
 @tool
 def query_vector_db(query: str, relevant_file: str = None) -> str:
@@ -100,22 +95,17 @@ def query_vector_db(query: str, relevant_file: str = None) -> str:
         "source": source
     })
 
-
 def get_file_hash(file_path):
-    """Calculate MD5 hash of a file."""
     hasher = hashlib.md5()
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hasher.update(chunk)
     return hasher.hexdigest()
 
-
 def _generate_summary(text: str) -> str:
-    """Generate a 2-line summary from the text, mirroring QdrantStorage."""
     sentences = [s.strip() for s in text.split('.') if s.strip()]
     summary = '. '.join(sentences[:2]) if len(sentences) >= 2 else text[:100]
     return summary if summary.endswith('.') else summary + '.'
-
 
 def extract_node(state: GraphState) -> GraphState:
     processed_files = state["processed_files"]
@@ -133,12 +123,11 @@ def extract_node(state: GraphState) -> GraphState:
     print(f"PDF extraction complete. Files saved in {state['extracted_dir']}")
     return state
 
-
 def chunk_node(state: GraphState) -> GraphState:
     processed_files = state["processed_files"]
     chunk_config = state["chunk_config"]
-    current_chunk_size = 1000
-    current_chunk_overlap = 200
+    current_chunk_size = 512
+    current_chunk_overlap = 50
     config_changed = (chunk_config.get("chunk_size") != current_chunk_size or
                       chunk_config.get("chunk_overlap") != current_chunk_overlap)
     files_to_chunk = []
@@ -158,10 +147,8 @@ def chunk_node(state: GraphState) -> GraphState:
     state["chunked_dir"] = chunker.chunk_document(state["extracted_dir"], "chunked_docs")
     state["chunk_config"] = {"chunk_size": current_chunk_size, "chunk_overlap": current_chunk_overlap}
     save_configs(state["pdf_dir"], processed_files, state["chunk_config"])
-    print(
-        f"Chunking complete with size={current_chunk_size}, overlap={current_chunk_overlap}. Files saved in {state['chunked_dir']}")
+    print(f"Chunking complete with size={current_chunk_size}, overlap={current_chunk_overlap}. Files saved in {state['chunked_dir']}")
     return state
-
 
 def embed_node(state: GraphState) -> GraphState:
     processed_files = state["processed_files"]
@@ -202,7 +189,6 @@ def embed_node(state: GraphState) -> GraphState:
     embedder = DocumentEmbedder(model="text-embedding-3-small")
     state["embedded_dir"] = embedder.embed_chunks(state["chunked_dir"], "embedded_docs")
 
-    # Add metadata and summary to embedded files
     for f in files_to_embed:
         base_name = os.path.splitext(f)[0]
         embedded_file = os.path.join(state["embedded_dir"], f"{base_name}_embedded.json")
@@ -213,11 +199,10 @@ def embed_node(state: GraphState) -> GraphState:
                     embedded_data = json.load(ef)
                 with open(chunked_file, "r") as cf:
                     chunked_data = json.load(cf)
-                original_metadata = chunked_data.get("metadata", {})  # Get original metadata from chunked file
+                original_metadata = chunked_data.get("metadata", {})
                 for chunk in embedded_data:
                     if "metadata" not in chunk:
                         chunk["metadata"] = {}
-                    # Preserve original_file_name from chunked data
                     chunk["metadata"]["original_file_name"] = original_metadata.get("original_file_name",
                                                                                     f.replace("_chunked.json", ".pdf"))
                     chunk["metadata"]["file_name"] = f.replace("_chunked.json", ".pdf")
@@ -234,7 +219,6 @@ def embed_node(state: GraphState) -> GraphState:
         json.dump(chunk_hashes, f, indent=4)
     print(f"Embedding complete. Files saved in {state['embedded_dir']}")
     return state
-
 
 def store_node(state: GraphState) -> GraphState:
     processed_files = state["processed_files"]
@@ -255,7 +239,6 @@ def store_node(state: GraphState) -> GraphState:
     state["collection_name"] = qdrant_store.store_embeddings(state["embedded_dir"])
     print(f"Storage complete. Embeddings saved in Qdrant collection: {state['collection_name']}")
     return state
-
 
 def classify_node(state: GraphState) -> GraphState:
     if not state["question"]:
@@ -297,7 +280,6 @@ Metadata (file_name, sample_content):
     print("Assigned source:", source)
     print(f"Classified relevant file: {relevant_file}")
     return state
-
 
 def query_node(state: GraphState) -> GraphState:
     if not state["question"]:
@@ -343,7 +325,6 @@ Return your response as this exact JSON object and nothing else:
     state["messages"].append(AIMessage(content=state["answer"]))
     return state
 
-
 # Indexing Workflow
 indexing_workflow = StateGraph(GraphState)
 indexing_workflow.add_node("extract", extract_node)
@@ -366,7 +347,6 @@ query_workflow.set_entry_point("classify")
 query_workflow.set_finish_point("query")
 query_app = query_workflow.compile()
 
-
 def needs_indexing(pdf_dir, processed_files, chunk_config):
     files_to_process = [f for f in os.listdir(pdf_dir) if
                         f.lower().endswith(".pdf") and f not in processed_files["processed"]]
@@ -387,7 +367,6 @@ def needs_indexing(pdf_dir, processed_files, chunk_config):
             print("Missing chunk file detected.")
             return True
     return False
-
 
 # Initial setup
 pdf_dir = "documents"
@@ -418,7 +397,6 @@ else:
     initial_state = store_node(initial_state)
     print("Embedding and storage check complete.")
 
-
 # Gradio chat function
 def chat_function(message, history):
     state = initial_state.copy()
@@ -436,7 +414,6 @@ def chat_function(message, history):
     ]
     return new_history
 
-
 # Gradio interface
 with gr.Blocks(title="Uber RAG Chatbot") as demo:
     gr.Markdown("# Uber RAG Chatbot")
@@ -447,7 +424,6 @@ with gr.Blocks(title="Uber RAG Chatbot") as demo:
 
     msg.submit(chat_function, inputs=[msg, chatbot], outputs=[chatbot])
     clear.click(lambda: [], None, chatbot)
-
 
 if __name__ == "__main__":
     demo.launch()

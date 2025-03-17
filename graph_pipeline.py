@@ -42,7 +42,7 @@ def load_processed_files(pdf_dir):
 
 def load_chunk_config(pdf_dir):
     config_path = os.path.join(pdf_dir, "chunk_config.json")
-    default_config = {"chunk_size": 512, "chunk_overlap": 50}
+    default_config = {"chunk_size": 1000, "chunk_overlap": 250}
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
             return json.load(f)
@@ -126,8 +126,8 @@ def extract_node(state: GraphState) -> GraphState:
 def chunk_node(state: GraphState) -> GraphState:
     processed_files = state["processed_files"]
     chunk_config = state["chunk_config"]
-    current_chunk_size = 512
-    current_chunk_overlap = 50
+    current_chunk_size = 1000
+    current_chunk_overlap = 250
     config_changed = (chunk_config.get("chunk_size") != current_chunk_size or
                       chunk_config.get("chunk_overlap") != current_chunk_overlap)
     files_to_chunk = []
@@ -415,7 +415,7 @@ def chat_function(message, history):
     return new_history
 
 # Gradio interface
-with gr.Blocks(title="Uber RAG Chatbot") as demo:
+with gr.Blocks(title="Agentic RAG Chatbot") as demo:
     gr.Markdown("# Uber RAG Chatbot")
     gr.Markdown("Ask questions about Uber based on processed documents. Only data from the vector database is used.")
     chatbot = gr.Chatbot(label="Chat History", type="messages")

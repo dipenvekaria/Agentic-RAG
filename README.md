@@ -1,53 +1,44 @@
 # Agentic RAG Chatbot for Intelligent Document Processing
 
-An intelligent, agent-driven Retrieval-Augmented Generation (RAG) system purpose-built for document-heavy workflows. This project enables contextual question-answering over unstructured documents using agentic orchestration, advanced chunking, and production-grade vector retrieval.
+Welcome to the **Agentic RAG Chatbot**, a Retrieval-Augmented Generation (RAG) system designed to answer questions using a vector database of processed PDF documents. This project processes PDF files, chunks them, embeds the content, stores it in a Qdrant vector database, and provides a chat interface to query the data.
 
----
+## Functionalities
 
-## 🚀 Overview
+- **PDF Processing**: Extracts text from PDF files and converts it to markdown format for downstream use.
+- **Document Chunking**: Splits large documents into smaller, manageable chunks for efficient retrieval.
+- **Embedding Generation**: Creates vector embeddings using OpenAI's `text-embedding-3-small` model to represent document content.
+- **Vector Storage**: Stores embeddings and metadata in a Qdrant vector database for fast similarity search.
+- **Intelligent Querying**: Classifies relevant documents and retrieves precise answers using a GPT-4o-mini model, limited to the vector database content.
+- **Chat Interface**: Offers an interactive Gradio-based UI for querying and viewing responses with source attribution.
 
-This project leverages modern GenAI tooling to build an **agentic RAG chatbot** optimized for PDF and text-based document ingestion. It simulates intelligent multi-step reasoning workflows using agents, providing grounded, traceable, and interactive responses.
+## Use Cases
 
-Use cases include:
-- Automated compliance document analysis
-- Contract review assistants
-- Financial research copilots
-- Internal knowledge base assistants
+- **Corporate Knowledge Base**: Query internal company documents (e.g., reports, manuals) to extract insights or answer employee questions without manual search.
+- **Legal Research**: Analyze legal PDFs (e.g., contracts, case law) to quickly find relevant clauses or precedents.
+- **Academic Research**: Process research papers or theses to summarize findings or answer specific questions based on the corpus.
+- **Customer Support**: Enable a chatbot to respond to customer inquiries using product manuals or FAQs stored as PDFs.
+- **Compliance Monitoring**: Search regulatory documents to ensure adherence or identify relevant guidelines efficiently.
+- **Historical Analysis**: Extract information from archived PDFs (e.g., news articles, government records) for historical insights or trends.
 
----
+## Tech Stack
 
-## 🧠 Key Capabilities
+- **Python**: Core programming language for the application.
+- **LangChain**: Framework for building context-aware language model applications.
+- **Qdrant**: Vector database for storing and querying embeddings.
+- **Gradio**: Library for creating the interactive chat interface.
+- **OpenAI**: Provides embedding (`text-embedding-3-small`) and language model (GPT-4o-mini) capabilities.
+- **Docling**: Tool for converting PDFs into structured markdown content.
 
-- **Agentic Orchestration:** Powered by LangGraph to manage multi-step reasoning and task delegation.
-- **Contextual Embedding:** Uses OpenAI for high-quality embedding of document chunks.
-- **Custom Chunking:** Efficient handling of complex document structures (PDFs, large text blobs).
-- **Scalable Vector Store:** Qdrant enables fast and accurate similarity search across large corpora.
-- **RAG Architecture:** Retrieval-Augmented Generation ensures factual grounding from documents.
-- **Conversational Interface:** Built for extensibility into chat-based frontends or APIs.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer             | Tools & Frameworks                          |
-|------------------|---------------------------------------------|
-| LLM & Embeddings | OpenAI (text-embedding-ada-002, GPT-4)      |
-| Vector Store     | Qdrant                                       |
-| Orchestration    | LangGraph + LangChain                       |
-| Data Ingestion   | DocLing for PDF and unstructured data       |
-| Chunking         | Recursive Character Text Splitter (custom)  |
-| Programming Lang | Python 3.10+                                 |
-
----
-
-## 📁 Project Structure
-
-```bash
-📦 agentic-rag-chatbot/
-├── data/                   # Raw and processed documents
-├── ingest/                 # DocLing-based ingestion pipeline
-├── rag/                    # RAG logic including chunking + retrieval
-├── agents/                 # LangGraph-based agent workflows
-├── app/                    # Optional: API or frontend interface
-├── tests/                  # Unit tests for pipeline components
-└── README.md
+## Project Folder Structure
+Agentic-RAG/
+├── documents/              # Directory for input PDF files
+├── convertedoc/            # Extracted JSON files from PDFs
+├── chunked_docs/          # Chunked document files
+├── embedded_docs/         # Embedded chunk files with vectors
+├── main.py                # Main script with workflows and Gradio UI
+├── extraction.py          # PDF extraction logic (PdfExtractor)
+├── chunking.py            # Document chunking logic (DocumentChunker)
+├── embedding.py           # Embedding generation logic (DocumentEmbedder)
+├── qdrant_storage.py      # Qdrant storage logic (QdrantStorage)
+├── .env                   # Environment variables (e.g., API keys)
+└── README.md              # This file

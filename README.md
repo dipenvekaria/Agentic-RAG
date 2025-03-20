@@ -30,15 +30,4 @@ Welcome to the **Agentic RAG Chatbot**, a Retrieval-Augmented Generation (RAG) s
 - **Docling**: Tool for converting PDFs into structured markdown content.
 
 ## Project Folder Structure
-Agentic-RAG/
-├── documents/              # Directory for input PDF files
-├── convertedoc/            # Extracted JSON files from PDFs
-├── chunked_docs/          # Chunked document files
-├── embedded_docs/         # Embedded chunk files with vectors
-├── main.py                # Main script with workflows and Gradio UI
-├── extraction.py          # PDF extraction logic (PdfExtractor)
-├── chunking.py            # Document chunking logic (DocumentChunker)
-├── embedding.py           # Embedding generation logic (DocumentEmbedder)
-├── qdrant_storage.py      # Qdrant storage logic (QdrantStorage)
-├── .env                   # Environment variables (e.g., API keys)
-└── README.md              # This file
+![image](https://github.com/user-attachments/assets/49d5ed74-74b8-4543-bfef-29015dd90a0a)

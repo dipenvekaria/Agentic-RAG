@@ -1,6 +1,6 @@
 # Agentic RAG Chatbot for Intelligent Document Processing
 
-## My personal project dabbling with AI stack (Python, LangChain, Qdrant, Gradio, OpenAI, Docling) to build a useful PDF-querying chatbot; features PDF processing, chunking, embedding, vector storage, and smart querying for use cases like corporate knowledge bases, legal research, and more.
+#### Note: My personal project dabbling with AI stack (Python, LangChain, Qdrant, Gradio, OpenAI, Docling) to build a useful PDF-querying chatbot; features PDF processing, chunking, embedding, vector storage, and smart querying for use cases like corporate knowledge bases, legal research, and more.
 
 Welcome to the **Agentic RAG Chatbot**, a Retrieval-Augmented Generation (RAG) system designed to answer questions using a vector database of processed PDF documents. This project processes PDF files, chunks them, embeds the content, stores it in a Qdrant vector database, and provides a chat interface to query the data.
 

@@ -414,9 +414,9 @@ def chat_function(message, history):
     return new_history
 
 # Gradio interface
-with gr.Blocks(title="Uber RAG Chatbot") as demo:
-    gr.Markdown("# Uber RAG Chatbot")
-    gr.Markdown("Ask questions about Uber based on processed documents. Only data from the vector database is used.")
+with gr.Blocks(title="Agentic RAG Chatbot") as demo:
+    gr.Markdown("# Agentic RAG Chatbot")
+    gr.Markdown("Ask questions based on processed documents. Only data from the vector database is used.")
     chatbot = gr.Chatbot(label="Chat History", type="messages")
     msg = gr.Textbox(label="Your Question", placeholder="Type your question here (e.g., 'What did Uber do?')")
     clear = gr.Button("Clear Chat")

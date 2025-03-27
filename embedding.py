@@ -3,7 +3,6 @@ import json
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 
-
 class DocumentEmbedder:
     def __init__(self, model="text-embedding-3-small"):
         load_dotenv()

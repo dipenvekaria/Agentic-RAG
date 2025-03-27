@@ -15,7 +15,7 @@ from qdrant_storage import QdrantStorage
 from qdrant_client import QdrantClient
 from dotenv import load_dotenv
 import gradio as gr
-#Load enviorn variables
+#Load env
 load_dotenv()
 
 class GraphState(TypedDict):

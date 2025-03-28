@@ -337,28 +337,31 @@ Return your response as this exact JSON object:
     return f"{tool_output['answer']} [Source: {tool_output['source']}]"
 
 
-# Initial setup and processing
+# Initial setup and processing (unchanged)
 state = process_documents()
 
-
 def chat_function(message, history):
+    # History is now a list of dicts with 'role' and 'content'
     answer = query_documents(message, state["embedded_dir"])
+    # Append new message and response to history
     new_history = history + [
         {"role": "user", "content": message},
         {"role": "assistant", "content": answer}
     ]
     return new_history
 
-
-# Gradio interface
+# Gradio interface with updated chatbot type
 with gr.Blocks(title="Agentic RAG Chatbot") as demo:
     gr.Markdown("# Agentic RAG Chatbot")
     gr.Markdown("Ask questions based on processed documents.")
+    # Set type='messages' to use the new format
     chatbot = gr.Chatbot(label="Chat History", type="messages")
     msg = gr.Textbox(label="Your Question", placeholder="Type your question here")
     clear = gr.Button("Clear Chat")
+
+    # Update inputs and outputs to work with the new format
     msg.submit(chat_function, inputs=[msg, chatbot], outputs=[chatbot])
     clear.click(lambda: [], None, chatbot)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(server_name="0.0.0.0", server_port=7860)  # Match Spaces default port

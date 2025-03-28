@@ -1,0 +1,7 @@
+gradio
+langchain-openai
+qdrant-client
+docling
+spacy
+nltk
+python-dotenv

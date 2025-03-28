@@ -122,8 +122,8 @@ def extract_node(state: GraphState) -> GraphState:
 def chunk_node(state: GraphState) -> GraphState:
     processed_files = state["processed_files"]
     chunk_config = state["chunk_config"]
-    current_chunk_size = 512
-    current_chunk_overlap = 50
+    current_chunk_size = 1000
+    current_chunk_overlap = 200
     config_changed = (chunk_config.get("chunk_size") != current_chunk_size or
                       chunk_config.get("chunk_overlap") != current_chunk_overlap)
     files_to_chunk = []
@@ -140,7 +140,7 @@ def chunk_node(state: GraphState) -> GraphState:
         state["chunked_dir"] = "chunked_docs"
         return state
     # MODIFY THIS LINE:
-    chunker = DocumentChunker(strategy="sentence", chunk_size=current_chunk_size, chunk_overlap=current_chunk_overlap)
+    chunker = DocumentChunker(strategy="semantic", chunk_size=current_chunk_size, chunk_overlap=current_chunk_overlap)
     state["chunked_dir"] = chunker.chunk_document(state["extracted_dir"], "chunked_docs")
     state["chunk_config"] = {"chunk_size": current_chunk_size, "chunk_overlap": current_chunk_overlap}
     save_configs(state["pdf_dir"], processed_files, state["chunk_config"])
@@ -270,7 +270,7 @@ Question: {question}
 Metadata (file_name, sample_content):
 {metadata}"""
     )
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
     metadata_str = "\n".join([f"{m['file_name']}: {m['sample_content']}" for m in metadata_list])
     chain = classify_prompt | llm
     relevant_file = chain.invoke({"question": state["question"], "metadata": metadata_str}).content.strip()
